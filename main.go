@@ -30,10 +30,33 @@ func main() {
 	}
 }
 
+
+type Repository struct {
+	Name string `json:"name"`
+	FullName string `json:"full_name"`
+}
+
+type PullRequest struct {
+	CommitsUrl string `json:"commits_url"`
+}
+
+type PullEventRequest struct {
+ 	Action		string	`json:"action"`
+	Number 		int 	`json:"number"`
+ 	PullRequest PullRequest `json:"pull_request"`
+	Repository	Repository `json:"repository"`
+}
+
 func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 
 	if req.Method == "GET" {
 		succeed(rw, "Hello World")
+		return
+	}
+
+	if req.Header.Get("X-Github-Event") != "pull_request" {
+		succeed(rw, "Nothing to do (not a pull request)")
+		log.Print("Request got non pull_request")
 		return
 	}
 
@@ -43,14 +66,14 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	payload := github.GitHubPayload{}
+	payload := PullEventRequest{}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		fail(rw, "Could not deserialize payload", err)
 		return
 	}
-
-	fmt.Println("Received", req.Method, "for ", payload.Repository.FullName)
-	commit_url := payload.Commits[0].URL
+	
+	fmt.Println("Received", payload.Action, "for", payload.Repository.FullName)
+	commit_url := payload.PullRequest.CommitsUrl
 	get_change_list(commit_url)
 	succeed(rw, "All checks pass")
 }
