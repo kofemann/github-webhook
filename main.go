@@ -48,6 +48,7 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	fmt.Println("Received", req.Method, "for ", payload.Repository.FullName)
 }
 
 func succeed(w http.ResponseWriter, event string) {
