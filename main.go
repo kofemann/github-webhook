@@ -50,7 +50,14 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Println("Received", req.Method, "for ", payload.Repository.FullName)
+	commit_url := payload.Commits[0].URL
+	get_change_list(commit_url)
 	succeed(rw, "All checks pass")
+}
+
+
+func get_change_list(commit_url string) {
+	fmt.Println("checking url:", commit_url)
 }
 
 func succeed(w http.ResponseWriter, event string) {
