@@ -21,9 +21,7 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 
-
-	http.HandleFunc("/", hello)
-	http.HandleFunc("/payload", payloadHandler)
+	http.HandleFunc("/", payloadHandler)
 	fmt.Println("Hello ", port)
 	err := http.ListenAndServe(":" + port, nil)
 	if err != nil {
@@ -31,11 +29,12 @@ func main() {
 	}
 }
 
-func hello(res http.ResponseWriter, req *http.Request) {
-    fmt.Fprintln(res, "hello, world")
-}
-
 func payloadHandler(rw http.ResponseWriter, req *http.Request) {
+
+	if req.Method == "GET" {
+		succeed(rw, "Hello World")
+		return
+	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -49,7 +48,6 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Println("Received", req.Method, "for ", payload.Repository.FullName)
 }
 
 func succeed(w http.ResponseWriter, event string) {
