@@ -12,6 +12,7 @@ import (
 	"github.com/GitbookIO/go-github-webhook"
 )
 
+const user_agent = "kofemann-go-agent/github-webhook"
 
 func main() {
 
@@ -49,6 +50,7 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Println("Received", req.Method, "for ", payload.Repository.FullName)
+	succeed(rw, "All checks pass")
 }
 
 func succeed(w http.ResponseWriter, event string) {
