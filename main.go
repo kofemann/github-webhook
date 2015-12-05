@@ -22,12 +22,17 @@ func main() {
 	}
 
 
+	http.HandleFunc("/", hello)
 	http.HandleFunc("/payload", payloadHandler)
 	fmt.Println("Hello ", port)
 	err := http.ListenAndServe(":" + port, nil)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func hello(res http.ResponseWriter, req *http.Request) {
+    fmt.Fprintln(res, "hello, world")
 }
 
 func payloadHandler(rw http.ResponseWriter, req *http.Request) {
