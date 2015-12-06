@@ -71,7 +71,7 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		fail(rw, "Could not deserialize payload", err)
 		return
 	}
-	
+
 	fmt.Println("Received", payload.Action, "for", payload.Repository.FullName)
 	commit_url := payload.PullRequest.CommitsUrl
 	get_change_list(commit_url)
@@ -81,6 +81,12 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 
 func get_change_list(commit_url string) {
 	fmt.Println("checking url:", commit_url)
+	l, err := http.Get(commit_url)
+	if err != nil {
+		fmt.Println("Failed to get list of commits", err.Error())
+		return
+	}
+	fmt.Print("%s", l)
 }
 
 func succeed(w http.ResponseWriter, event string) {
