@@ -2,9 +2,5 @@
 	"ImportPath": "signoff",
 	"GoVersion": "go1.5.1",
 	"Deps": [
-		{
-			"ImportPath": "github.com/GitbookIO/go-github-webhook",
-			"Rev": "fb75be5aedf5f5b46be9c8d20b52645e15bc224a"
-		}
 	]
 }

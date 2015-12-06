@@ -1,18 +1,16 @@
 package main
 
 import (
-//	"os"
-//	"net/http"
 	"os"
-	"fmt"
 	"log"
 	"encoding/json"
 	"net/http"
 	"io/ioutil"
-	"github.com/GitbookIO/go-github-webhook"
+	"regexp"
+	"bytes"
 )
 
-const user_agent = "kofemann-go-agent/github-webhook"
+const SIGNED_OFF_BY = "Signed-off-by:"
 
 func main() {
 
@@ -23,74 +21,93 @@ func main() {
 	}
 
 	http.HandleFunc("/", payloadHandler)
-	fmt.Println("Hello ", port)
 	err := http.ListenAndServe(":" + port, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-
-type Repository struct {
-	Name string `json:"name"`
-	FullName string `json:"full_name"`
-}
-
-type PullRequest struct {
-	CommitsUrl string `json:"commits_url"`
-}
-
-type PullEventRequest struct {
- 	Action		string	`json:"action"`
-	Number 		int 	`json:"number"`
- 	PullRequest PullRequest `json:"pull_request"`
-	Repository	Repository `json:"repository"`
-}
-
 func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 
+	event := req.Header.Get("X-Github-Event")
 	if req.Method == "GET" {
-		succeed(rw, "Hello World")
+		succeed(rw, event)
 		return
 	}
 
-	if req.Header.Get("X-Github-Event") != "pull_request" {
-		succeed(rw, "Nothing to do (not a pull request)")
+	if event != "pull_request" {
+		succeed(rw, event)
 		log.Print("Request got non pull_request")
 		return
 	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		fail(rw, "Cant read", err)
+		fail(rw, event, err)
 		return
 	}
 
 	payload := PullEventRequest{}
 	if err := json.Unmarshal(body, &payload); err != nil {
-		fail(rw, "Could not deserialize payload", err)
+		fail(rw, event, err)
 		return
 	}
 
-	fmt.Println("Received", payload.Action, "for", payload.Repository.FullName)
 	commit_url := payload.PullRequest.CommitsUrl
-	get_change_list(commit_url)
-	succeed(rw, "All checks pass")
+	if !isSignOffPreset(commit_url) {
+		log.Print("Some commits missing ", SIGNED_OFF_BY)
+		setPoolRequestStatus(payload.PullRequest.StatusUrl, "failure")
+	} else {
+		log.Print("All commits have ", SIGNED_OFF_BY)
+		setPoolRequestStatus(payload.PullRequest.StatusUrl, "success")
+	}
+	succeed(rw, event)
 }
 
+func setPoolRequestStatus(status_url string, status string) {
 
-func get_change_list(commit_url string) {
-	fmt.Println("checking url:", commit_url)
-	l, err := http.Get(commit_url)
+	access_token := os.Getenv("GITHUB_TOKEN")
+	msg := []byte("{\"context\":\"Signed-off-by validator\",\"state\":\"" + status +"\", \"decription\":\"All commits Signed-off\"}")
+
+	req, err := http.NewRequest("POST", status_url, bytes.NewBuffer(msg))
 	if err != nil {
-		fmt.Println("Failed to get list of commits", err.Error())
+		log.Fatal("can't create a new request")
 		return
 	}
-	fmt.Print("%s", l)
+	client := http.Client{}
+	req.Header.Add("Authorization", "token " + access_token)
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Failed to update pull request:", err.Error())
+		return
+	}
+
+	_, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal("failed to update pull request: ", err.Error())
+	}
+}
+
+func isSignOffPreset(commit_url string) bool {
+
+	l, err := http.Get(commit_url)
+	if err != nil {
+		return false
+	}
+	body, err := ioutil.ReadAll(l.Body)
+	commits := []PullRequestCommit{}
+	json.Unmarshal(body, &commits)
+	matcher := regexp.MustCompile(SIGNED_OFF_BY)
+	for i := range commits {
+		if !matcher.MatchString(commits[i].Commit.Message) {
+			return false
+		}
+	}
+	return true
 }
 
 func succeed(w http.ResponseWriter, event string) {
-	render(w, github.PayloadPong{
+	render(w, PayloadPong{
 		Ok:    true,
 		Event: event,
 	})
@@ -98,7 +115,7 @@ func succeed(w http.ResponseWriter, event string) {
 
 func fail(w http.ResponseWriter, event string, err error) {
 	w.WriteHeader(500)
-	render(w, github.PayloadPong{
+	render(w, PayloadPong{
 		Ok:    false,
 		Event: event,
 		Error: err.Error(),
