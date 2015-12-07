@@ -16,6 +16,7 @@ type Repository struct {
 }
 
 type PullRequest struct {
+	User        User    `json:"user"`
 	CommitsUrl string `json:"commits_url"`
 	StatusUrl   string `json:"statuses_url"`
 }
@@ -38,4 +39,8 @@ type Status struct {
 	Description string `json:"description"`
 	Context string `json:"context"`
 	TargetUrl string `json:"target_url"`
+}
+
+type User struct {
+	Login string `json:"login"`
 }

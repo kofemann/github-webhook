@@ -53,6 +53,9 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Printf("Validation request for repo: [%s] by user: [%s]",
+		payload.Repository.FullName, payload.PullRequest.User.Login)
+
 	if payload.Action != "opened" && payload.Action != "synchronize" {
 		log.Printf("Validation skiped on action: [%s] for repo: [%s]",
 			payload.Action, payload.Repository.FullName)
