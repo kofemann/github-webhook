@@ -33,3 +33,9 @@ type PayloadPong struct {
 	Error string `json:"error,omitempty"`
 }
 
+type Status struct {
+	State string `json:"state"`
+	Description string `json:"description"`
+	Context string `json:"context"`
+	TargetUrl string `json:"target_url"`
+}

@@ -56,18 +56,28 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 	commit_url := payload.PullRequest.CommitsUrl
 	if !isSignOffPreset(commit_url) {
 		log.Print("Some commits missing ", SIGNED_OFF_BY)
-		setPoolRequestStatus(payload.PullRequest.StatusUrl, "failure")
+		setPoolRequestStatus(payload.PullRequest.StatusUrl, "failure", "Some commits missing " + SIGNED_OFF_BY )
 	} else {
 		log.Print("All commits have ", SIGNED_OFF_BY)
-		setPoolRequestStatus(payload.PullRequest.StatusUrl, "success")
+		setPoolRequestStatus(payload.PullRequest.StatusUrl, "success", "All commits contain " + SIGNED_OFF_BY)
 	}
 	succeed(rw, event)
 }
 
-func setPoolRequestStatus(status_url string, status string) {
+func setPoolRequestStatus(status_url string, status string, description string) {
 
 	access_token := os.Getenv("GITHUB_TOKEN")
-	msg := []byte("{\"context\":\"Signed-off-by validator\",\"state\":\"" + status +"\", \"decription\":\"All commits Signed-off\"}")
+	hgStatus := Status{
+		State: status,
+		Context: "Signed-off-by validator",
+		Description:  description,
+	}
+
+	msg, err := json.Marshal(hgStatus)
+	if err != nil {
+		log.Fatal("Failed to encode status update")
+		return
+	}
 
 	req, err := http.NewRequest("POST", status_url, bytes.NewBuffer(msg))
 	if err != nil {
