@@ -53,6 +53,8 @@ func payloadHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Printf("Validation triggered by action: %s on repo: %s",
+		payload.Action, payload.Repository.FullName)
 	commit_url := payload.PullRequest.CommitsUrl
 	if !isSignOffPreset(commit_url) {
 		log.Print("Some commits missing ", SIGNED_OFF_BY)
