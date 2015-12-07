@@ -124,7 +124,7 @@ func succeed(w http.ResponseWriter, event string) {
 }
 
 func fail(w http.ResponseWriter, event string, err error) {
-	w.WriteHeader(500)
+	w.WriteHeader(http.StatusInternalServerError)
 	render(w, PayloadPong{
 		Ok:    false,
 		Event: event,
@@ -135,7 +135,7 @@ func fail(w http.ResponseWriter, event string, err error) {
 func render(w http.ResponseWriter, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(data)
